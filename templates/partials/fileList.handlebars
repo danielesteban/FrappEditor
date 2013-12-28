@@ -1,0 +1,3 @@
+{{#each this}}
+	<li{{#if active}} class="active"{{/if}}><a>{{#equals type 'directory'}}{{i 'folder-close'}}{{else}}{{i 'file'}}{{/equals}} &nbsp;{{name}}</a></li>
+{{/each}}

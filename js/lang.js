@@ -1,0 +1,42 @@
+LANG = {
+	en : {
+		editing : 'Editing',
+		notSaved : 'Not saved',
+		saved : 'Saved',
+		unsavedConfirmation : 'You got unsaved changes on this file... Are you sure?',
+		openFile : 'Open file',
+		file : 'File',
+		new : 'New',
+		open : 'Open',
+		save : 'Save',
+		saveAs : 'Save as',
+		closeWindow : 'Close window',
+		edit : 'Edit',
+		undo : 'Undo',
+		redo : 'Redo',
+		find : 'Find',
+		findAndReplace : 'Replace',
+		themes : 'Themes',
+		underGPL : 'Under a GPL license'
+	},
+	es : {
+		editing : 'Editando',
+		notSaved : 'Sin guardar',
+		saved : 'Guardado',
+		unsavedConfirmation : 'Tienes cambios sin guardar en este fichero... ¿Estás seguro?',
+		openFile : 'Abrir fichero',
+		file : 'Fichero',
+		new : 'Nuevo',
+		open : 'Abrir',
+		save : 'Guardar',
+		saveAs : 'Guardar como',
+		closeWindow : 'Cerrar ventana',
+		edit : 'Editar',
+		undo : 'Deshacer',
+		redo : 'Rehacer',
+		find : 'Buscar',
+		findAndReplace : 'Reemplazar',
+		themes : 'Temas',
+		underGPL : 'Bajo una licencia GPL'
+	}
+};

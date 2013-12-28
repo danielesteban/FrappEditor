@@ -1,0 +1,100 @@
+/* Main Layout */
+html, body {
+	height: 100%;
+}
+
+body {
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+	font-weight: 300;
+	padding: 24px 0 24px 140px;
+	overflow: hidden;
+}
+
+menu, footer {
+	position: absolute;
+	left: 0;
+	width: 100%;
+	height: 24px;
+	background: #232323;
+	padding: 0 15px;
+}
+
+menu {
+	top: 0;
+	list-style-type: none;
+	margin: 0;
+	border-bottom: 4px solid lighten(#232323, 10%);
+	li.top {
+		float: left;
+		margin-right: 15px;
+	}
+	a, a:hover, a:active, a:focus {
+		color: #fff;
+	}
+	.dropdown-menu {
+		> li > a {
+			min-width: 210px;
+			small {
+				font-weight: 700;
+				font-size: 70%;
+				float: right;
+				position: relative;
+				top: 3px;
+			}
+		}
+		.divider {
+			margin: 5px 0;
+		}
+		&.themes > li > a  {
+			padding-top: 1px;
+			padding-bottom: 1px;
+		}
+	}
+}
+
+nav {
+	position: relative;
+	float: left;
+	left: -140px;
+	width: 140px;
+	height: 100%;
+	overflow-y: auto;
+	background: #e6e6e6;
+	list-style-type: none;
+	border-right: 1px solid #505050;
+	&.nav > li > a {
+		padding: 5px 10px;
+		text-overflow: ellipsis;
+		-o-text-overflow: ellipsis;
+		-ms-text-overflow: ellipsis;
+		white-space: nowrap;
+		overflow: hidden;
+	}
+	&.nav-pills > li > a {
+		border-radius: 0;
+	} 
+}
+
+footer {
+	bottom: 0;
+	border-top: 4px solid lighten(#232323, 10%);
+	color: darken(#fff, 20%);
+	small {
+		padding-top: 1px;
+	}
+}
+
+#wrap {
+	position: relative;
+	height: 100%;
+}
+
+#editor { 
+	position: absolute;
+	width: 100%;
+	height: 100%;
+}
+
+menu a, nav a, div.modal a {
+	cursor: pointer;
+}
