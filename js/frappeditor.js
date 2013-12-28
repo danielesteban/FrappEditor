@@ -10,6 +10,7 @@ EDITOR = {
 		this.setTheme(FRAPP.storage.get('theme', true) || 'twilight');
 		this.ace.getSession().setMode('ace/mode/javascript');
 		this.ace.getSession().setUseWrapMode(true);
+		this.ace.getSession().setUseSoftTabs(false);
 		this.ace.on('change', function() {
 			EDITOR.unsaved = true;
 			$('footer .status').text(L.notSaved + (EDITOR.file ? ': ' + EDITOR.file.name : ''));
