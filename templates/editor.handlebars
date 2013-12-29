@@ -5,11 +5,13 @@
 				{{L 'file'}} <span class="caret"></span>
 			</a>
 			<ul class="dropdown-menu">
-				<li><a onclick="EDITOR.new()">{{L 'new'}}<small>CTRL+N</small></a></li>
+				<li><a onclick="EDITOR.newFile()">{{L 'newFile'}}<small>CTRL+N</small></a></li>
+				<li><a onclick="EDITOR.newFolder()">{{L 'newFolder'}}<small>CTRL+ALT+N</small></a></li>
 				<li><a href="#open" data-toggle="modal">{{L 'open'}}...<small>CTRL+O</small></a></li>
 				<li><a onclick="EDITOR.save()">{{L 'save'}}<small>CTRL+S</small></a></li>
 				<li><a onclick="EDITOR.saveAs()">{{L 'saveAs'}}...<small>CTRL+ALT+S</small></a></li>
 				<li class="divider"></li>
+				<li><a onclick="EDITOR.newWindow()">{{L 'newWindow'}}<small>CTRL+SHIFT+N</small></a></li>
 				<li><a onclick="FRAPP.close()">{{L 'closeWindow'}}<small>CTRL+W</small></a></li>
 			</ul>
 		</div>
@@ -50,4 +52,5 @@
 	</small>
 	<span class="status"></span>
 </footer>
+{{> newFolder}}
 {{> open}}

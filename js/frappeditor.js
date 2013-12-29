@@ -24,10 +24,30 @@ EDITOR = {
 			});
 		});
 
+		$('.modal#newFolder').on('shown.bs.modal', function() {
+			$('input', $(this)).first().focus();
+		});
+
+		$('.modal#newFolder form').submit(function(e) {
+			e.stopPropagation();
+			e.preventDefault();
+			var modal = $(this).parents('.modal').first(),
+				name = e.target.name.value;
+			
+			name !== '' && FRAPP.mkdir(EDITOR.path, name, function() {
+				$('form', modal)[0].reset();
+				modal.modal('hide');
+				EDITOR.updateTree(EDITOR.path);
+			});
+		});
+
 		EDITOR.updateTree(params.path);
 	},
 	updateTree : function(path, open) {
-		EDITOR.renderFileList(path, $('nav'), EDITOR.open.bind(EDITOR));
+		EDITOR.renderFileList(path, $('nav'), EDITOR.open.bind(EDITOR), function(item) {
+			EDITOR.path = item.fullName;
+		});
+		EDITOR.path = path;
 	},
 	listDirectory : function(path, callback) {
 		FRAPP.listDirectory(path, function(data) {
@@ -40,7 +60,7 @@ EDITOR = {
 			callback(items);
 		});
 	},
-	renderFileList : function(path, container, onFileClick) {
+	renderFileList : function(path, container, onFileClick, onDirClick) {
 		var self = this;
 		this.listDirectory(path, function(items) {
 			self.file && items.forEach(function(i) {
@@ -49,8 +69,10 @@ EDITOR = {
 			container.empty().append(Handlebars.partials.fileList(items));
 			$('a', container).click(function(e) {
 				var item = items[$(e.target).parents('li').first().index()];
-				if(item.type === 'directory') EDITOR.renderFileList(item.fullName, container, onFileClick);
-				else if(onFileClick) onFileClick(item);
+				if(item.type === 'directory') {
+					onDirClick && onDirClick(item);
+					EDITOR.renderFileList(item.fullName, container, onFileClick, onDirClick);
+				} else if(onFileClick) onFileClick(item);
 			});
 		});
 	},
@@ -72,7 +94,7 @@ EDITOR = {
 		});
 	},
 	save : function() {
-		if(EDITOR.saving || !this.file) return; //TODO: New file!
+		if(EDITOR.saving || !this.file) return; //TODO: New file, Save As...!
 		var file = this.file;
 		EDITOR.saving = true;
 		FRAPP.saveFile(file.fullName, this.ace.getValue(), function() {
@@ -84,7 +106,19 @@ EDITOR = {
 	saveAs : function() {
 		//TODO!
 	},
-	new : function() {
+	newFile : function() {
+		if(EDITOR.unsaved && !confirm(L.unsavedConfirmation)) return;
+		delete this.file;
+		this.ace.setValue('');
+		$('footer .status').text('');
+	},
+	removeFile : function() {
+		//TODO!
+	},
+	newFolder : function() {
+		$('.modal#newFolder').modal('show');
+	},
+	removeFolder : function() {
 		//TODO!
 	},
 	setTheme : function(name) {
@@ -93,6 +127,14 @@ EDITOR = {
 	},
 	showSearch : function(replace) {
 		ace.require('ace/ext/searchbox').Search(this.ace, replace);
+	},
+	newWindow : function() {
+		FRAPP.load({
+			repository : {
+				type : 'git',
+				url : 'https://github.com/danielesteban/FrappEditor.git'
+			}
+		}, {path : EDITOR.path});
 	}
 }
 
@@ -109,7 +151,9 @@ window.addEventListener('frapp.init', function(e) {
 
 	/* Keyboard shorcuts */
 	$(window).keydown(function(e) {
-		(e.metaKey || e.ctrlKey) && e.keyCode === 78 && EDITOR.new();
+		(e.metaKey || e.ctrlKey) && e.keyCode === 78 && EDITOR.newFile();
+		(e.metaKey || e.ctrlKey) && e.altKey && (e.keyCode === 78 || e.keyCode === 192) && EDITOR.newFolder();
+		(e.metaKey || e.ctrlKey) && e.shiftKey && e.keyCode === 78 && EDITOR.newWindow();
 		(e.metaKey || e.ctrlKey) && e.keyCode === 83 && EDITOR.save();
 		(e.metaKey || e.ctrlKey) && e.altKey && e.keyCode === 83 && EDITOR.saveAs();
 		(e.metaKey || e.ctrlKey) && e.keyCode === 79 && $('.modal#open').modal('show');
