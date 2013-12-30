@@ -1,6 +1,7 @@
 {
 	"name" : "FrappEditor",
 	"version" : "0.0.1",
+	"description" : "A code editor (with auto-reload).",
 	"author" : "Daniel Esteban Nombela <dani@hellacoders.com>",
 	"repository" : {
 		"type" : "git",
