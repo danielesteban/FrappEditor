@@ -18,34 +18,72 @@ EDITOR = {
 
 		$('.modal#open').on('show.bs.modal', function() {
 			var modal = $(this);
-			EDITOR.renderFileList(EDITOR.file ? EDITOR.file.path : null, $('.fileList', modal), function(file) {
-				EDITOR.open(file);
-				modal.modal('hide');
+			EDITOR.renderFileList(EDITOR.file ? EDITOR.file.path : null, $('.fileList', modal), {
+				fileClick : function(file) {
+					EDITOR.open(file);
+					modal.modal('hide');
+				}
 			});
 		});
 
-		$('.modal#newFolder').on('shown.bs.modal', function() {
+		$('.modal#newItem').on('shown.bs.modal', function() {
 			$('input', $(this)).first().focus();
 		});
 
-		$('.modal#newFolder form').submit(function(e) {
+		$('.modal#newItem form').submit(function(e) {
 			e.stopPropagation();
 			e.preventDefault();
 			var modal = $(this).parents('.modal').first(),
 				name = e.target.name.value;
 			
-			name !== '' && FRAPP.mkdir(EDITOR.path, name, function() {
-				$('form', modal)[0].reset();
-				modal.modal('hide');
-				EDITOR.updateTree(EDITOR.path);
-			});
+			if(name === '') return;
+			switch(e.target.type.value) {
+				case 'directory':
+					FRAPP.mkdir(EDITOR.path, name, function() {
+						EDITOR.updateTree(EDITOR.path);
+						modal.modal('hide');
+					});
+				break;
+				case 'file':
+					EDITOR.file = {
+						path : EDITOR.path,
+						name : name
+					};
+					EDITOR.save(function() {
+						EDITOR.open(EDITOR.file);
+						modal.modal('hide');
+					});
+				break;
+			}
 		});
 
 		EDITOR.updateTree(params.path);
 	},
 	updateTree : function(path, open) {
-		EDITOR.renderFileList(path, $('nav'), EDITOR.open.bind(EDITOR), function(item) {
-			EDITOR.path = item.fullName;
+		EDITOR.renderFileList(path, $('nav'), {
+			fileClick : EDITOR.open.bind(EDITOR),
+			dirClick : function(item) {
+				EDITOR.path = item.fullName;
+			},
+			contextmenu : function(e, item) {
+				FRAPP.contextmenu(e, [
+					{
+						label : L.remove,
+						click : function() {
+							if(!confirm(L.areYouSure)) return;
+							var cb = function() {
+									$(e.target).parents('li').first().fadeOut('fast');
+								};
+
+							if(item.type === 'directory') FRAPP.rmdir(item.fullName, cb);
+							else {
+								FRAPP.unlink(item.path, item.name, cb);
+								EDITOR.file && EDITOR.file.path === item.path && EDITOR.file.name === item.name && EDITOR.newFile(true);
+							}
+						}
+					}
+				]);
+			}
 		});
 		EDITOR.path = path;
 	},
@@ -60,19 +98,26 @@ EDITOR = {
 			callback(items);
 		});
 	},
-	renderFileList : function(path, container, onFileClick, onDirClick) {
+	renderFileList : function(path, container, events) {
 		var self = this;
 		this.listDirectory(path, function(items) {
+			var getItem = function(e) {
+					return items[$(e.target).parents('li').first().index()];
+				};
+
 			self.file && items.forEach(function(i) {
 				i.path === self.file.path && i.name === self.file.name && (i.active = true);
 			});
 			container.empty().append(Handlebars.partials.fileList(items));
 			$('a', container).click(function(e) {
-				var item = items[$(e.target).parents('li').first().index()];
+				var item = getItem(e);
 				if(item.type === 'directory') {
-					onDirClick && onDirClick(item);
-					EDITOR.renderFileList(item.fullName, container, onFileClick, onDirClick);
-				} else if(onFileClick) onFileClick(item);
+					events.dirClick && events.dirClick(item);
+					EDITOR.renderFileList(item.fullName, container, events);
+				} else if(events.fileClick) events.fileClick(item);
+			}).bind('contextmenu', function(e) {
+				var item = getItem(e);
+				events.contextmenu && events.contextmenu(e, item);
 			});
 		});
 	},
@@ -83,7 +128,7 @@ EDITOR = {
 		if(EDITOR.unsaved && !confirm(L.unsavedConfirmation)) return;
 		this.file = file;
 		this.updateTree(file.path);
-		FRAPP.readFile(file.fullName, function(contents) {
+		FRAPP.readFile(file.path, file.name, function(contents) {
 			editor.setValue(contents);
 			editor.clearSelection();
 			editor.gotoLine(0);
@@ -93,33 +138,37 @@ EDITOR = {
 			delete EDITOR.unsaved;
 		});
 	},
-	save : function() {
-		if(EDITOR.saving || !this.file) return; //TODO: New file, Save As...!
+	save : function(callback) {
+		if(EDITOR.saving) return;
+		if(!this.file) return this.saveAs();
 		var file = this.file;
 		EDITOR.saving = true;
-		FRAPP.saveFile(file.fullName, this.ace.getValue(), function() {
+		FRAPP.saveFile(file.path, file.name, this.ace.getValue(), function() {
 			$('footer .status').text(L.saved + ': ' + file.name);
 			delete EDITOR.unsaved;
 			delete EDITOR.saving;
+			callback && callback();
 		});
 	},
 	saveAs : function() {
-		//TODO!
+		var modal = $('.modal#newItem');
+		$('#newItemLabel', modal).text(L.saveAs + '...');
+		$('input[name="type"]', modal).val('file');
+		$('form', modal)[0].reset();
+		modal.modal('show');
 	},
-	newFile : function() {
-		if(EDITOR.unsaved && !confirm(L.unsavedConfirmation)) return;
+	newFile : function(force) {
+		if(!force && EDITOR.unsaved && !confirm(L.unsavedConfirmation)) return;
 		delete this.file;
 		this.ace.setValue('');
 		$('footer .status').text('');
 	},
-	removeFile : function() {
-		//TODO!
-	},
 	newFolder : function() {
-		$('.modal#newFolder').modal('show');
-	},
-	removeFolder : function() {
-		//TODO!
+		var modal = $('.modal#newItem');
+		$('#newItemLabel', modal).text(L.newFolder);
+		$('input[name="type"]', modal).val('directory');
+		$('form', modal)[0].reset();
+		modal.modal('show');
 	},
 	setTheme : function(name) {
 		FRAPP.storage.set('theme', name, true);
