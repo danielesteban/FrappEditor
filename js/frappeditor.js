@@ -54,6 +54,16 @@ EDITOR = {
 						modal.modal('hide');
 					});
 				break;
+				case 'rename':
+					var path = e.target.path.value,
+						oldName = e.target.oldName.value;
+
+					FRAPP.rename(path, oldName, name, function() {
+						EDITOR.file && EDITOR.file.path === path && EDITOR.file.name === oldName && (EDITOR.file.name = name) && EDITOR.open(EDITOR.file);
+						EDITOR.updateTree(EDITOR.path);
+						modal.modal('hide');
+					});
+				break;
 			}
 		});
 
@@ -66,7 +76,20 @@ EDITOR = {
 				EDITOR.path = item.fullName;
 			},
 			contextmenu : function(e, item) {
+				if(item.name === '..') return;
 				FRAPP.contextmenu(e, [
+					{
+						label : L.rename,
+						click : function() {
+							var modal = $('.modal#newItem');
+							$('#newItemLabel', modal).text(L.rename);
+							$('form', modal)[0].reset();
+							$('input[name="type"]', modal).val('rename');
+							$('input[name="path"]', modal).val(item.path);
+							$('input[name="name"], input[name="oldName"]', modal).val(item.name);
+							modal.modal('show');
+						}
+					},
 					{
 						label : L.remove,
 						click : function() {
@@ -153,8 +176,8 @@ EDITOR = {
 	saveAs : function() {
 		var modal = $('.modal#newItem');
 		$('#newItemLabel', modal).text(L.saveAs + '...');
-		$('input[name="type"]', modal).val('file');
 		$('form', modal)[0].reset();
+		$('input[name="type"]', modal).val('file');
 		modal.modal('show');
 	},
 	newFile : function(force) {
@@ -166,8 +189,8 @@ EDITOR = {
 	newFolder : function() {
 		var modal = $('.modal#newItem');
 		$('#newItemLabel', modal).text(L.newFolder);
-		$('input[name="type"]', modal).val('directory');
 		$('form', modal)[0].reset();
+		$('input[name="type"]', modal).val('directory');
 		modal.modal('show');
 	},
 	setTheme : function(name) {
