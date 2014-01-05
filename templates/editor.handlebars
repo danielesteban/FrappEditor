@@ -1,51 +1,11 @@
-<menu class="clearfix">
-	<li class="top">
-		<div class="dropdown">
-			<a class="dropdown-toggle" data-toggle="dropdown" href="#">
-				{{L 'file'}} <span class="caret"></span>
-			</a>
-			<ul class="dropdown-menu">
-				<li><a onclick="EDITOR.newFile()">{{L 'newFile'}}<small>CTRL+N</small></a></li>
-				<li><a onclick="EDITOR.newFolder()">{{L 'newFolder'}}<small>CTRL+ALT+N</small></a></li>
-				<li><a href="#open" data-toggle="modal">{{L 'open'}}...<small>CTRL+O</small></a></li>
-				<li><a onclick="EDITOR.save()">{{L 'save'}}<small>CTRL+S</small></a></li>
-				<li><a onclick="EDITOR.saveAs()">{{L 'saveAs'}}...<small>CTRL+ALT+S</small></a></li>
-				<li class="divider"></li>
-				<li><a onclick="EDITOR.newWindow()">{{L 'newWindow'}}<small>CTRL+SHIFT+N</small></a></li>
-				<li><a onclick="window.close()">{{L 'closeWindow'}}<small>CTRL+W</small></a></li>
-			</ul>
-		</div>
-	</li>
-	<li class="top">
-		<div class="dropdown">
-			<a class="dropdown-toggle" data-toggle="dropdown" href="#">
-				{{L 'edit'}} <span class="caret"></span>
-			</a>
-			<ul class="dropdown-menu">
-				<li><a onclick="EDITOR.ace.undo()">{{L 'undo'}}<small>CTRL+Z</small></a></li>
-				<li><a onclick="EDITOR.ace.redo()">{{L 'redo'}}<small>CTRL+Y</small></a></li>
-				<li><a onclick="EDITOR.showSearch()">{{L 'find'}}<small>CTRL+F</small></a></li>
-				<li><a onclick="EDITOR.showSearch(true)">{{L 'findAndReplace'}}<small>CTRL+ALT+F</small></a></li>
-			</ul>
-		</div>
-	</li>
-	<li class="top">
-		<div class="dropdown">
-			<a class="dropdown-toggle" data-toggle="dropdown" href="#">
-				{{L 'themes'}} <span class="caret"></span>
-			</a>
-			<ul class="dropdown-menu themes">
-				{{#each themes}}
-					<li><a onclick="EDITOR.setTheme('{{@key}}')">{{@key}}</a></li>
-				{{/each}}
-			</ul>
-		</div>
-	</li>
-</menu>
-<nav class="nav nav-pills nav-stacked"></nav>
-<div id="wrap">
-	<div id="editor"></div>
-</div>
+{{> menu}}
+<section>
+	<nav class="nav nav-pills nav-stacked"></nav>
+	<div id="wrap">
+		<ul id="tabs"></ul>
+		<div id="editor"></div>
+	</div>
+</section>
 <footer>
 	<small class="pull-right">
 		FrappEditor v{{version}} &nbsp;|&nbsp; Daniel Esteban Nombela {{i 'copyright-mark'}} {{year}} &nbsp;|&nbsp; {{L 'underGPL'}}
