@@ -98,7 +98,7 @@ EDITOR = {
 		var self = this;
 		path = path || EDITOR.frapp.path;
 		tree = tree || $('nav');
-		level = level || 1;
+		level = level || 0;
 		FRAPP.listDirectory(path, function(data) {
 			var ignore = ['.DS_Store', '.git'],
 				items = [],
@@ -111,8 +111,9 @@ EDITOR = {
 			});
 			items.forEach(function(item) {
 				var li = $('<li>'),
-					a = $('<a style="padding-left:' + (level * 10) + 'px">');
+					a = $('<a>');
 
+				level > 0 && a.css('padding-left', (level * 12) + 8);
 				li.attr('class', LIB.fileId(item));
 				item.name = $('<div>').html(item.name).text();
 				a.html((item.type === 'directory' ? '<small class="glyphicon glyphicon-chevron-right"></small> ' : '') + item.name);
