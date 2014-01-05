@@ -25,23 +25,13 @@ LIB = {
 };
 
 EDITOR = {
-	init : function(params) {
+	init : function(frapp) {
 		var themelist = ace.require('ace/ext/themelist').themesByName;
 		$('body').append(Handlebars.templates.editor({
 			themes : themelist,
 			version : FRAPP.version.frapp,
 			year : (new Date()).getFullYear()
 		}));
-		
-		$('.modal#open').on('show.bs.modal', function() {
-			var modal = $(this);
-			EDITOR.renderFileList(EDITOR.file ? EDITOR.file.path : null, $('.fileList', modal), {
-				fileClick : function(file) {
-					EDITOR.open(file);
-					modal.modal('hide');
-				}
-			});
-		});
 
 		$('.modal#newItem').on('shown.bs.modal', function() {
 			$('input', $(this)).first().focus();
@@ -70,16 +60,15 @@ EDITOR = {
 			if(name === '') return;
 			switch(e.target.type.value) {
 				case 'directory':
-					FRAPP.mkdir(EDITOR.path, name, function() {
-						EDITOR.updateTree(EDITOR.path);
+					FRAPP.mkdir(e.target.path.value, name, function() {
+						EDITOR.renderTree();
 						modal.modal('hide');
 					});
 				break;
 				case 'file':
-					EDITOR.file.path = EDITOR.path || '.';
 					rename();
 					EDITOR.save(function() {
-						EDITOR.updateTree(EDITOR.path);
+						EDITOR.renderTree();
 						modal.modal('hide');
 					});
 				break;
@@ -89,88 +78,118 @@ EDITOR = {
 
 					FRAPP.rename(path, oldName, name, function() {
 						EDITOR.file && EDITOR.file.path === path && EDITOR.file.name === oldName && rename();
-						EDITOR.updateTree(EDITOR.path);
+						EDITOR.renderTree();
 						modal.modal('hide');
 					});
 				break;
 			}
 		});
 
-		EDITOR.updateTree(params.path);
+		EDITOR.frapp = frapp;
+		FRAPP.setTitle('FrappEditor' + ' ─ ' + frapp.path);
+		EDITOR.renderTree(frapp.path);
 	},
-	updateTree : function(path, open) {
-		EDITOR.renderFileList(path, $('nav'), {
-			fileClick : EDITOR.open.bind(EDITOR),
-			dirClick : function(item) {
-				EDITOR.path = item.fullName;
-			},
-			contextmenu : function(e, item) {
-				if(item.name === '..') return;
-				FRAPP.contextmenu(e, [
-					{
-						label : L.rename,
-						click : function() {
-							var modal = $('.modal#newItem');
-							$('#newItemLabel', modal).text(L.rename);
-							$('form', modal)[0].reset();
-							$('input[name="type"]', modal).val('rename');
-							$('input[name="path"]', modal).val(item.path);
-							$('input[name="name"], input[name="oldName"]', modal).val(item.name);
-							modal.modal('show');
-						}
-					},
-					{
-						label : L.remove,
-						click : function() {
-							if(!confirm(L.areYouSure)) return;
-							var cb = function() {
-									$(e.target).parents('li').first().fadeOut('fast');
-								};
-
-							if(item.type === 'directory') FRAPP.rmdir(item.fullName, cb);
-							else {
-								FRAPP.unlink(item.path, item.name, cb);
-								EDITOR.file && EDITOR.file.path === item.path && EDITOR.file.name === item.name && EDITOR.close();
-							}
-						}
-					}
-				]);
-			}
-		});
-		EDITOR.path = path;
+	updateTree : function() {
+		$('nav li').removeClass('active');
+		if(!this.file) return;
+		$('nav li.' + this.file.id).addClass('active');
 	},
-	listDirectory : function(path, callback) {
+	renderTree : function(path, tree, level) {
+		var self = this;
+		path = path || EDITOR.frapp.path;
+		tree = tree || $('nav');
+		level = level || 1;
 		FRAPP.listDirectory(path, function(data) {
 			var ignore = ['.DS_Store', '.git'],
-				items = [];
+				items = [],
+				directories = [],
+				files = [];
 
+			tree.empty();
 			data.forEach(function(item) {
 				ignore.indexOf(item.name) === -1 && items.push(item);
 			});
-			callback(items);
-		});
-	},
-	renderFileList : function(path, container, events) {
-		var self = this;
-		this.listDirectory(path, function(items) {
-			var getItem = function(e) {
-					return items[$(e.target).parents('li').first().index()];
-				};
+			items.forEach(function(item) {
+				var li = $('<li>'),
+					a = $('<a style="padding-left:' + (level * 10) + 'px">');
 
-			self.file && items.forEach(function(i) {
-				i.path === self.file.path && i.name === self.file.name && (i.active = true);
-			});
-			container.empty().append(Handlebars.partials.fileList(items));
-			$('a', container).click(function(e) {
-				var item = getItem(e);
+				li.attr('class', LIB.fileId(item));
+				item.name = $('<div>').html(item.name).text();
+				a.html((item.type === 'directory' ? '<small class="glyphicon glyphicon-chevron-right"></small> ' : '') + item.name);
+				a.mousedown(LIB.cancelHandler).bind('contextmenu', function(e) {
+					if(item.name === '..') return;
+					var menu = [
+						{
+							label : L.rename,
+							click : function() {
+								var modal = $('.modal#newItem');
+								$('#newItemLabel', modal).text(L.rename);
+								$('form', modal)[0].reset();
+								$('input[name="type"]', modal).val('rename');
+								$('input[name="path"]', modal).val(item.path);
+								$('input[name="name"], input[name="oldName"]', modal).val(item.name);
+								modal.modal('show');
+							}
+						},
+						{
+							label : L.remove,
+							click : function() {
+								if(!confirm(L.areYouSure)) return;
+								var cb = function() {
+										li.first().fadeOut('fast', function() {
+											self.renderTree(path, tree, level);
+										});
+									};
+
+								if(item.type === 'directory') FRAPP.rmdir(item.fullName, cb);
+								else {
+									FRAPP.unlink(item.path, item.name, cb);
+									EDITOR.file && EDITOR.file.path === item.path && EDITOR.file.name === item.name && EDITOR.close();
+								}
+							}
+						}
+					];
+					item.type === 'directory' && (menu = [
+						{
+							label : L.newFile,
+							click : function() {
+								self.newFile(item.fullName);
+							}	
+						},
+						{
+							label : L.newFolder,
+							click : function() {
+								self.newFolder(item.fullName);
+							}	
+						}
+					].concat(menu));
+					FRAPP.contextmenu(e, menu);
+				});
+				li.append(a);
 				if(item.type === 'directory') {
-					events.dirClick && events.dirClick(item);
-					EDITOR.renderFileList(item.fullName, container, events);
-				} else if(events.fileClick) events.fileClick(item);
-			}).bind('contextmenu', function(e) {
-				var item = getItem(e);
-				events.contextmenu && events.contextmenu(e, item);
+					var ul, icon;
+					a.click(function() {
+						if(!ul) {
+							ul = $('<ul class="nav nav-pills nav-stacked">');
+							if(li.next().length) li.next().before(ul);
+							else li.parent().append(ul);
+							icon = $('.glyphicon', ul.prev());
+							self.renderTree(item.fullName, ul, level + 1);
+						} else ul[ul.is(':visible') ? 'hide' : 'show']();
+						icon.attr('class', 'glyphicon glyphicon-chevron-' + (icon.hasClass('glyphicon-chevron-right') ? 'down' : 'right'));
+					});
+					directories.push(li);
+				} else {
+					a.click(function() {
+						EDITOR.open(item);
+					});
+					files.push(li);
+				}
 			});
+			directories.concat(files).forEach(function(li) {
+				tree.append(li);
+			});
+			self.updateTree();
 		});
 	},
 	open : function(file) {
@@ -215,8 +234,8 @@ EDITOR = {
 				tabs.children().removeClass('active');
 				$('#tab' + file.id, tabs).addClass('active');
 				$('footer .status').text(file.name ? L.editing + (file.name ? ': ' + file.name : '') : L.newFile);
-				FRAPP.setTitle(file.name ? file.name + ' ─ ' + file.path : L.newFile);
-				self.updateTree(file.path || self.path);
+				FRAPP.setTitle((file.name ? file.name : L.newFile) + ' ─ ' + file.path);
+				self.updateTree();
 				file.editor.focus();
 			};
 
@@ -234,13 +253,14 @@ EDITOR = {
 		var index = LIB.arraySearch(this.files, file.id, 'id', true);
 		this.files[index].editor.destroy();
 		this.files.splice(index, 1);
+		delete file.unsaved;
 		$('#tabs #tab' + file.id).remove();
 		$('#editor #editor' + file.id).remove();
 		if(this.file.id !== file.id) return;
 		delete this.file;
 		$('footer .status').text('');
 		FRAPP.setTitle('FrappEditor');
-		this.updateTree(this.path);
+		this.updateTree();
 		this.files.length && this.open(this.files[index - (index > 0 ? 1 : 0)]);
 	},
 	save : function(callback) {
@@ -265,14 +285,17 @@ EDITOR = {
 		$('input[name="type"]', modal).val('file');
 		modal.modal('show');
 	},
-	newFile : function() {
-		this.open({});
+	newFile : function(path) {
+		this.open({
+			path : path || (this.file ? this.file.path : EDITOR.frapp.path)
+		});
 	},
-	newFolder : function() {
+	newFolder : function(path) {
 		var modal = $('.modal#newItem');
 		$('#newItemLabel', modal).text(L.newFolder);
 		$('form', modal)[0].reset();
 		$('input[name="type"]', modal).val('directory');
+		$('input[name="path"]', modal).val(path || (this.file ? this.file.path : EDITOR.frapp.path));
 		modal.modal('show');
 	},
 	setTheme : function(name) {
@@ -292,7 +315,7 @@ EDITOR = {
 				type : 'git',
 				url : 'https://github.com/danielesteban/FrappEditor.git'
 			}
-		}, {path : EDITOR.path});
+		});
 	},
 	undo : function() {
 		this.file && this.file.editor.undo();
@@ -320,7 +343,6 @@ window.addEventListener('frapp.init', function(e) {
 		(e.metaKey || e.ctrlKey) && e.keyCode === 78 && EDITOR.newFile();
 		if((e.metaKey || e.ctrlKey) && e.altKey && e.keyCode === 83) return EDITOR.saveAs();
 		(e.metaKey || e.ctrlKey) && e.keyCode === 83 && EDITOR.save();
-		(e.metaKey || e.ctrlKey) && e.keyCode === 79 && $('.modal#open').modal('show');
 		if((e.metaKey || e.ctrlKey) && e.keyCode === 87) {
 			LIB.cancelHandler(e);
 			EDITOR.close();
@@ -328,5 +350,32 @@ window.addEventListener('frapp.init', function(e) {
 	});
 
 	/* Init editor */
-	EDITOR.init(e.detail.params || null);
+	if(e.detail.params && e.detail.params.frapp) return EDITOR.init(e.detail.params.frapp);
+	
+	/* Open modal */
+	FRAPP.installed(function(data) {
+		var engineFrapps = [
+				'https://github.com/danielesteban/FrappInstaller.git',
+				'https://github.com/danielesteban/FrappSignin.git',
+				'https://github.com/danielesteban/FrappMenu.git'
+			],
+			frapps = [];
+		
+		data.forEach(function(f) {
+			engineFrapps.indexOf(f.repository.url) === -1 && frapps.push(f);
+		});
+		
+		var modal = $(Handlebars.partials.open({
+			frapps : frapps
+		}));
+		modal.on('hidden.bs.modal', function() {
+			$(this).remove();
+		});
+		$('td', modal).click(function(e) {
+			EDITOR.init(frapps[$(e.target).parents('tr').first().index()]);
+			modal.modal('hide');
+		});
+		$('body').append(modal);
+		modal.modal({backdrop : 'static', keyboard : false});
+	});
 });
